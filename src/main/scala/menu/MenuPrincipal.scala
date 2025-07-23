@@ -523,6 +523,23 @@ class MenuPrincipal {
             println(s"   Places disponibles: ${ride.availableSeats}")
             println(s"   Prix: ${ride.pricePerSeat}€")
             ride.description.foreach(desc => println(s"   Description: $desc"))
+            
+            // Afficher les réservations pour ce trajet
+            reservationService.findByRideIdWithPassengerDetails(ride.id.get) match {
+              case Success(reservations) =>
+                if (reservations.nonEmpty) {
+                  val totalReservedSeats = reservations.map(_._1.seatsReserved).sum
+                  println(s"   📋 Réservations (${reservations.length} passager(s), ${totalReservedSeats} place(s) réservée(s)):")
+                  reservations.foreach { case (reservation, passenger) =>
+                    println(s"      • ${passenger.fullName} - ${passenger.phone}")
+                    println(s"        ${reservation.seatsReserved} place(s) - Réservé le ${reservation.createdAt.format(dateFormatter)}")
+                  }
+                } else {
+                  println(s"   📋 Aucune réservation pour ce trajet")
+                }
+              case Failure(e) =>
+                println(s"   ❌ Erreur lors de la récupération des réservations: ${e.getMessage}")
+            }
           }
         }
       case Failure(e) =>
@@ -696,7 +713,8 @@ class MenuPrincipal {
         println(s"Prix total: ${totalPrice}€")
         print("Confirmer la réservation? (oui/non): ")
         
-        if (StdIn.readLine().toLowerCase != "oui") {
+        val confirmation = StdIn.readLine().trim.toLowerCase
+        if (confirmation != "oui") {
           println("Réservation annulée")
           return true
         }
@@ -750,14 +768,18 @@ class MenuPrincipal {
   private def showReservationHistory(user: UserInfo): Boolean = {
     println(s"\n=== Historique des réservations ===")
     
-    reservationService.findByPassengerIdWithRideDetails(user.id) match {
+    reservationService.findByPassengerIdWithRideAndVehicleDetails(user.id) match {
       case Success(reservations) =>
         if (reservations.isEmpty) {
           println("Aucune réservation")
         } else {
-          reservations.zipWithIndex.foreach { case ((reservation, ride, driver), index) =>
+          reservations.zipWithIndex.foreach { case ((reservation, ride, driver, vehicleOpt), index) =>
             println(s"\n${index + 1}. ${ride.departureCity} → ${ride.arrivalCity}")
             println(s"   Conducteur: ${driver.fullName}")
+            vehicleOpt.foreach { vehicle =>
+              println(s"   Véhicule: ${vehicle.make} ${vehicle.model} (${vehicle.year}) - ${vehicle.color}")
+              println(s"   Plaque d'immatriculation: ${vehicle.licensePlate}")
+            }
             println(s"   Départ: ${ride.departureTime.format(dateFormatter)}")
             println(s"   Places réservées: ${reservation.seatsReserved}")
             println(s"   Prix total: ${reservation.seatsReserved * ride.pricePerSeat}€")

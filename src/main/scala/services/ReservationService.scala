@@ -1,7 +1,7 @@
 package services
 
 import dao.ReservationDAO
-import models.{Reservation, ReservationStatus, Ride, User, UserInfo}
+import models.{Reservation, ReservationStatus, Ride, User, UserInfo, VehicleInfo}
 import java.time.LocalDateTime
 import scala.util.Try
 
@@ -63,5 +63,35 @@ class ReservationService {
   
   def getTotalReservedSeats(rideId: Int): Try[Int] = {
     reservationDAO.getTotalReservedSeats(rideId)
+  }
+
+  def findByPassengerIdWithRideAndVehicleDetails(passengerId: Int): Try[List[(Reservation, Ride, UserInfo, Option[VehicleInfo])]] = {
+    reservationDAO.findByPassengerIdWithRideAndVehicleDetails(passengerId).map(_.map { case (reservation, ride, user, vehicle) =>
+      val userInfo = UserInfo(
+        id = user.id.get,
+        email = user.email,
+        password = user.password,
+        firstName = user.firstName,
+        lastName = user.lastName,
+        phone = user.phone,
+        createdAt = user.createdAt
+      )
+      (reservation, ride, userInfo, vehicle)
+    })
+  }
+
+  def findByRideIdWithPassengerDetails(rideId: Int): Try[List[(Reservation, UserInfo)]] = {
+    reservationDAO.findByRideIdWithPassengerDetails(rideId).map(_.map { case (reservation, user) =>
+      val userInfo = UserInfo(
+        id = user.id.get,
+        email = user.email,
+        password = user.password,
+        firstName = user.firstName,
+        lastName = user.lastName,
+        phone = user.phone,
+        createdAt = user.createdAt
+      )
+      (reservation, userInfo)
+    })
   }
 }

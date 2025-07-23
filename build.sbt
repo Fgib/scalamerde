@@ -6,6 +6,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "untitled",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql" % "42.7.3"
+      "org.postgresql" % "postgresql" % "42.7.3",
+      "com.lihaoyi" %% "scalasql" % "0.1.11"
     )
   )
